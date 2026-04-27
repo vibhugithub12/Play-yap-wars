@@ -18,45 +18,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Active rooms: { [CODE]: { createdAt } }
+// Active rooms: { [CODE]: { createdAt, status, players[] } }
+// status: "lobby" | "ongoing"
 const activeRooms = {};
 
 // Cleanup rooms older than 3 hours
-setInterval(
-  () => {
-    const now = Date.now();
-    Object.keys(activeRooms).forEach((code) => {
-      if (now - activeRooms[code].createdAt > 3 * 60 * 60 * 1000)
-        delete activeRooms[code];
-    });
-  },
-  10 * 60 * 1000,
-);
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(activeRooms).forEach(code => {
+    if (now - activeRooms[code].createdAt > 3 * 60 * 60 * 1000)
+      delete activeRooms[code];
+  });
+}, 10 * 60 * 1000);
 
 app.get("/", (req, res) => res.send("Hot Take Showdown 🔥"));
 
-// Guest calls this before joining to verify room exists
+// Guest calls this before joining to verify room exists + check status
 app.get("/room-exists", (req, res) => {
   const code = (req.query.code || "").toUpperCase();
-  res.json({ exists: !!activeRooms[code] });
+  const room = activeRooms[code];
+  res.json({ exists: !!room, status: room?.status || null });
 });
 
-// Single event endpoint — all game events go through here
+// Create room explicitly (called by host on lobby creation)
+app.post("/create-room", (req, res) => {
+  const code = (req.body.code || "").toUpperCase();
+  if (!code) return res.status(400).json({ error: "Missing code" });
+  activeRooms[code] = { createdAt: Date.now(), status: "lobby" };
+  console.log(`✅ Room created: ${code}  |  Active: ${Object.keys(activeRooms).length}`);
+  res.json({ ok: true });
+});
+
+// Update room status (lobby <-> ongoing)
+app.post("/room-status", (req, res) => {
+  const code = (req.body.code || "").toUpperCase();
+  const { status } = req.body;
+  if (!activeRooms[code]) return res.status(404).json({ error: "Room not found" });
+  activeRooms[code].status = status;
+  console.log(`🔄 Room ${code} status → ${status}`);
+  res.json({ ok: true });
+});
+
+// All game events go through here
 app.post("/event", async (req, res) => {
   const { channel, event, data } = req.body;
   if (!channel || !event || !data)
     return res.status(400).json({ error: "Missing fields" });
 
   const code = channel.replace("game-", "").toUpperCase();
-
- 
-  // Register room on first player-joined (host creates room)
-  if (event === "player-joined" && !activeRooms[code]) {
-    activeRooms[code] = { createdAt: Date.now() };
-    console.log(
-      `✅ Room created: ${code}  |  Active: ${Object.keys(activeRooms).length}`,
-    );
-  }
 
   // Remove room shortly after game ends
   if (event === "show-final") {
@@ -75,23 +84,13 @@ app.post("/event", async (req, res) => {
   }
 });
 
- // Add this new endpoint
-  app.post("/create-room", (req, res) => {
-    const { code } = req.body;
-    if (!code) return res.status(400).json({ error: "Missing code" });
-    activeRooms[code.toUpperCase()] = { createdAt: Date.now() };
-    console.log(
-      `✅ Room created: ${code} | Active: ${Object.keys(activeRooms).length}`,
-    );
-    res.json({ ok: true });
-  });
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
-// Keep server alive — ping self every 14 minutes
-const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+// Keep alive ping (prevents Render free tier from sleeping)
+const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 4000}`;
 setInterval(() => {
   fetch(SERVER_URL)
     .then(() => console.log("🏓 Self-ping OK"))
     .catch(err => console.log("Self-ping failed:", err.message));
 }, 14 * 60 * 1000);
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
