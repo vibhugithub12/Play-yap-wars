@@ -6,11 +6,11 @@ const Pusher = require("pusher");
 // 🔑 PUSHER CONFIG — REPLACE THESE WITH YOUR REAL KEYS
 // ============================================================
 const pusher = new Pusher({
-  appId: "2145447", // 👈 Replace
-  key: "c4653cc5a9f2411e6d66", // 👈 Replace
-  secret: "132efeb96afe661fe9d6", // 👈 Replace
-  cluster: "ap2", // 👈 Replace e.g. "ap2"
-  useTLS: true,
+  appId:   process.env.PUSHER_APP_ID,
+  key:     process.env.PUSHER_KEY,
+  secret:  process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
+  useTLS:  true,
 });
 // ============================================================
 
