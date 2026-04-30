@@ -31,7 +31,7 @@ setInterval(() => {
   });
 }, 10 * 60 * 1000);
 
-app.get("/", (req, res) => res.send("Hot Take Showdown 🔥"));
+app.get("/", (req, res) => res.send("Yap 🗣️ Wars"));
 
 // Guest calls this before joining to verify room exists + check status
 app.get("/room-exists", (req, res) => {

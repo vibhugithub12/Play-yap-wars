@@ -1,5 +1,5 @@
 {
-  "name": "hot-take-server",
+  "name": "yap-wars-server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
