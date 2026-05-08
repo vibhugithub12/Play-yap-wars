@@ -31,7 +31,7 @@ setInterval(() => {
   });
 }, 10 * 60 * 1000);
 
-app.get("/", (req, res) => res.send("Yap 🗣️ Wars"));
+app.get("/", (req, res) => res.send("Hot Take Showdown 🔥"));
 
 // Guest calls this before joining to verify room exists + check status
 app.get("/room-exists", (req, res) => {
@@ -46,6 +46,16 @@ app.post("/create-room", (req, res) => {
   if (!code) return res.status(400).json({ error: "Missing code" });
   activeRooms[code] = { createdAt: Date.now(), status: "lobby" };
   console.log(`✅ Room created: ${code}  |  Active: ${Object.keys(activeRooms).length}`);
+  res.json({ ok: true });
+});
+
+// Fix 4: Delete room when host leaves
+app.post("/delete-room", (req, res) => {
+  const code = (req.body.code || "").toUpperCase();
+  if (activeRooms[code]) {
+    delete activeRooms[code];
+    console.log(`🗑  Room deleted by host: ${code}`);
+  }
   res.json({ ok: true });
 });
 
