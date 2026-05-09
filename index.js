@@ -5,7 +5,7 @@ const { Resend } = require("resend");
 // 🔑 RESEND API KEY — replace or set as env var RESEND_API_KEY
 // ============================================================
 const resend = new Resend(process.env.RESEND_API_KEY || "YOUR_RESEND_API_KEY"); // 👈 Replace
-const FEEDBACK_TO = "lifeprogress37+yapwars@gmail.com";
+const FEEDBACK_TO = "lifeprogress37@gmail.com";
 // ============================================================
 const cors = require("cors");
 const Pusher = require("pusher");
