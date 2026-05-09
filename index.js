@@ -1,4 +1,12 @@
 const express = require("express");
+const { Resend } = require("resend");
+
+// ============================================================
+// 🔑 RESEND API KEY — replace or set as env var RESEND_API_KEY
+// ============================================================
+const resend = new Resend(process.env.RESEND_API_KEY || "YOUR_RESEND_API_KEY"); // 👈 Replace
+const FEEDBACK_TO = "lifeprogress37+yapwars@gmail.com";
+// ============================================================
 const cors = require("cors");
 const Pusher = require("pusher");
 
@@ -31,7 +39,7 @@ setInterval(() => {
   });
 }, 10 * 60 * 1000);
 
-app.get("/", (req, res) => res.send("Hot Take Showdown 🔥"));
+app.get("/", (req, res) => res.send("Yap 🗣️ Wars"));
 
 // Guest calls this before joining to verify room exists + check status
 app.get("/room-exists", (req, res) => {
@@ -49,16 +57,6 @@ app.post("/create-room", (req, res) => {
   res.json({ ok: true });
 });
 
-// Fix 4: Delete room when host leaves
-app.post("/delete-room", (req, res) => {
-  const code = (req.body.code || "").toUpperCase();
-  if (activeRooms[code]) {
-    delete activeRooms[code];
-    console.log(`🗑  Room deleted by host: ${code}`);
-  }
-  res.json({ ok: true });
-});
-
 // Update room status (lobby <-> ongoing)
 app.post("/room-status", (req, res) => {
   const code = (req.body.code || "").toUpperCase();
@@ -67,6 +65,23 @@ app.post("/room-status", (req, res) => {
   activeRooms[code].status = status;
   console.log(`🔄 Room ${code} status → ${status}`);
   res.json({ ok: true });
+});
+
+// Feedback endpoint
+app.post("/feedback", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "No message" });
+  try {
+    await resend.emails.send({
+      from:    "Yap Wars Feedback <onboarding@resend.dev>",
+      to:      FEEDBACK_TO,
+      subject: "💬 New Yap Wars Feedback",
+      html: `<p>${message.replace(/\n/g, "<br/>")}</p><hr/><p style="color:#888;font-size:12px">Sent from yapwars.online</p>`,   });
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("Resend error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // All game events go through here
